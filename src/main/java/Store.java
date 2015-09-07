@@ -41,11 +41,12 @@ public class Store{
     try(Connection con = DB.sql2o.open()){
       String sql = "INSERT INTO stores (store_name) VALUES (:store_name)";
       this.id = (int) con.createQuery(sql, true)
-        .addParameter(store_name, store_name)
+        .addParameter("store_name", store_name)
         .executeUpdate()
         .getKey();
     }
   }
+
 
   public static Store find(int id){
     try(Connection con = DB.sql2o.open()){
@@ -58,8 +59,9 @@ public class Store{
   }
 
   public void updateStore(String new_store_name){
+    this.store_name = new_store_name;
     try(Connection con = DB.sql2o.open()){
-      String sql = "UPSDATE stores SET store_name =:store_name WHERE id =:id";
+      String sql = "UPDATE stores SET store_name =:store_name WHERE id =:id";
       con.createQuery(sql)
         .addParameter("store_name", new_store_name)
         .addParameter("id", id)
@@ -80,22 +82,52 @@ public class Store{
         .executeUpdate();
     }
   }
-  //
+
   // public List<Brand> getBrands(){
   //   try(Connection con = DB.sql2o.open()){
   //     String sql = "SELECT brands.* FROM" +
-  //       " stores"+
-  //       " JOIN brands_store ON (stores.id = brands_store.store_id" +
-  //       " JOIN brands ON (brands.id = brands_stores.brand_id)" +
+  //       " stores" +
+  //       " JOIN brands_stores ON (stores.id = brands_stores.store_id" +
+  //       " JOIN brands ON (brands_stores.brand_id = brands.id)" +
   //       " WHERE stores.id =:id";
   //     List<Brand> brands = con.createQuery(sql)
-  //         .addParameter("id", id)
-  //         .executeAndFetch(Brands.class);
+  //         .addParameter("id", this.id)
+  //         .executeAndFetch(Brand.class);
   //         return brands;
   //   }
   // }
 
 
+
+  public ArrayList<Brand> getBrands() {
+  try(Connection con = DB.sql2o.open()){
+    String sql = "SELECT brand_id FROM brands_stores WHERE store_id = :store_id";
+    List<Integer> brandIds = con.createQuery(sql)
+      .addParameter("store_id", this.getId())
+      .executeAndFetch(Integer.class);
+
+    ArrayList<Brand> brands = new ArrayList<Brand>();
+
+    for (Integer brandId : brandIds) {
+        String storeQ = "SELECT * FROM brands WHERE id = :brandId";
+        Brand brand = con.createQuery(storeQ)
+          .addParameter("brandId", brandId)
+          .executeAndFetchFirst(Brand.class);
+        brands.add(brand);
+    }
+    return brands;
+  }
+}
+
+  public void addBrand(Brand brand){
+    try(Connection con = DB.sql2o.open()){
+      String sql = "INSERT INTO brands_stores (brand_id, store_id) VALUES (:brand_id, :store_id)";
+      con.createQuery(sql)
+        .addParameter("brand_id", brand.getId())
+        .addParameter("store_id", this.id)
+        .executeUpdate();
+    }
+  }
 
 
 }
